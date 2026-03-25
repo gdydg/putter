@@ -1,0 +1,43 @@
+name: Extract Web Paths to TXT
+
+# 触发条件：允许在 GitHub Actions 页面手动触发
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: '请输入你要提取的网页 URL'
+        required: true
+        default: 'https://gemini.google.com'
+
+jobs:
+  scrape-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉取仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 安装 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 使用较新的稳定版
+
+      # 3. 安装 Puppeteer 依赖 (由于我们没有 package.json，这里直接装)
+      - name: Install Dependencies
+        run: npm install puppeteer
+
+      # 4. 运行抓取脚本，并将输入的 URL 传给环境变量
+      - name: Run Scraper
+        env:
+          TARGET_URL: ${{ github.event.inputs.target_url }}
+        run: node scraper.js
+
+      # 5. 上传生成的 txt 文件作为 Artifact (产物) 供下载
+      - name: Upload Output TXT
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracted-paths # 下载时的压缩包名称
+          path: paths.txt       # 需要上传的文件路径
+          retention-days: 7     # 文件保留天数，过期自动删除
